@@ -12,8 +12,6 @@ export const userlogin = async (req: Request, res: Response) => {
     const { email, password } = req.body;
     const user = await DB.collection("user").findOne({ email });
     console.log("Email from request:", email);
-    console.log("Database:", DB.databaseName);
-    console.log("Collection:", DB.collection("user").collectionName);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -64,8 +62,6 @@ export const createAccount = async (req: Request, res: Response) => {
         message: "Account exist already",
       });
     }
-    console.log("Database:", DB.databaseName);
-    console.log("Collection:", DB.collection("user").collectionName);
     const hashedPassword = await bcrypt.hash(payload.password, 13);
     const user = {
       ...payload,

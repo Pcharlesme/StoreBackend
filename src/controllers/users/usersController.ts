@@ -1,9 +1,8 @@
 import express from "express";
 import { getDb } from "../../config/dbconnect";
 import { Response, Request } from "express";
-import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
-import { success } from "zod";
+
 
 /// find specific user wih id
 export const getUserbyId = async (req: Request, res: Response) => {
@@ -17,6 +16,13 @@ export const getUserbyId = async (req: Request, res: Response) => {
         },
       },
     );
+    if (!ObjectId.isValid(req.params.id as string)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     if (!user) {
       return res.status(404).json({
         success: false,
