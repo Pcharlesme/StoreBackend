@@ -25,6 +25,15 @@ export const listingSchema = z.object({
     .optional(),
 });
 
+export const updateListingSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  price: z.number().optional(),
+  type: z.enum(["FREE", "SELL", "SWAP"]).optional(),
+  expiryDate: z.coerce.date().optional(),
+  status: z.enum(["SOLD"]).optional(),
+});
+
 export const listingStatusSchema = z.object({
   status: z.enum(["ACTIVE", "SOLD", "EXPIRED", "DELETED"]),
 });

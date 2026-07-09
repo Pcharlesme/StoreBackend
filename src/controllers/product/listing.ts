@@ -6,6 +6,7 @@ import { success, ZodError } from "zod";
 import {
   listingSchema,
   listingStatusSchema,
+  updateListingSchema,
 } from "../../schemas/auth/product_schema";
 
 // add new lisiting
@@ -46,7 +47,7 @@ export const createListing = async (req: Request, res: Response) => {
 export const updateListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
-    const payload = listingSchema.parse(req.body);
+    const payload = updateListingSchema.parse(req.body);
     const id = req.params.id as string;
 
     if (!ObjectId.isValid(id)) {
@@ -84,9 +85,8 @@ export const updateListing = async (req: Request, res: Response) => {
     });
   }
 };
-//getListing
-
-export const getListing = async (req: Request, res: Response) => {
+//getListing by id
+export const getListingbyId = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
     const id = req.params.id as string;
@@ -120,27 +120,87 @@ export const getListing = async (req: Request, res: Response) => {
   }
 };
 
-//update listing status
-
-export const listingStatus = async (req: Request, res: Response) => {
+//delete Listing by id
+export const deleteListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
     const id = req.params.id as string;
-    if(!ObjectId.isValid(id)){
-        return res.status(404).json({
-            success:false,
-            message:"Listing not found"
-        })
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid listing ID",
+      });
+    }
+    const data = await DB.collection("products").deleteOne({
+      _id: new ObjectId(id),
+    });
+    if (data.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Listing not found",
+      });
+    }
+    // success response
+    return res.status(200).json({
+      success: true,
+      message: "Listing deleted successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server failed",
+    });
+  }
+};
+
+//update listing status
+export const updateListingStatus = async (req: Request, res: Response) => {
+  try {
+    const DB = getDb();
+    const id = req.params.id as string;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Listing not found",
+      });
     }
     const payload = listingStatusSchema.parse(req.body);
     const result = await DB.collection("products").updateOne(
       { _id: new ObjectId(id) },
       {
         $set: payload,
+        updatedAt: new Date(),
       },
     );
-    if(result.matchedCount === 0){
-        return res.status()
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Listing id  not found",
+      });
     }
-  } catch (err) {}
+    return res.status(200).json({
+      success: true,
+      message: "Listing update successfully",
+    });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return res.status(404).json({
+        success: false,
+        message: "invalid character",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Server failed",
+    });
+  }
 };
+
+//find all product 
+export const findListing=()=> {
+    try{
+
+    }catch(err){
+
+    }
+}
