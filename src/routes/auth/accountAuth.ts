@@ -9,9 +9,10 @@ import {
 } from "../../controllers/users/usersController";
 
 const Authrouter = express.Router();
-
+// user auth
 Authrouter.post("/auth/signup", createAccount);
 Authrouter.post("/auth/login", LoginLimiter, userlogin);
+//user management
 Authrouter.get("/users/me/:id", getUserProfile);
 Authrouter.get("/users/:id", getUserbyId);
 Authrouter.patch("/users/me/:id", updateUserProfile);
