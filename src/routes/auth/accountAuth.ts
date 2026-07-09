@@ -30,8 +30,8 @@ Authrouter.delete("/users/:id", deleteUser);
 Authrouter.post("/listings", createListing);
 Authrouter.patch("/listings/:id", updateListing);
 Authrouter.get("/listings", findListing);
-Authrouter.get("/listings/:id", getListingbyId);
 Authrouter.get("/listings/search", searchListing);
+Authrouter.get("/listings/:id", getListingbyId);
 Authrouter.delete("/listings/:id", deleteListing);
 //product lising status
 Authrouter.patch("/listings/status/:id", updateListingStatus);

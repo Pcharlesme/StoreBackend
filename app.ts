@@ -10,12 +10,21 @@ const PORT = process.env.PORT || 3000;
 // Global middleware
 app.use(cors());
 app.use(express.json());
-app.use(auth);
-
+// add logger
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
+  const start = Date.now();
+
+  res.on("finish", () => {
+    console.log(
+      `${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`,
+    );
+  });
+
   next();
 });
+
+app.use(auth);
+
 // cron to start delisting expired product
 startDeListingExpiryJob();
 // Health check

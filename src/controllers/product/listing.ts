@@ -168,8 +168,10 @@ export const updateListingStatus = async (req: Request, res: Response) => {
     const result = await DB.collection("products").updateOne(
       { _id: new ObjectId(id) },
       {
-        $set: payload,
-        updatedAt: new Date(),
+        $set: {
+          ...payload,
+          updatedAt: new Date(),
+        },
       },
     );
     if (result.matchedCount === 0) {
@@ -184,7 +186,7 @@ export const updateListingStatus = async (req: Request, res: Response) => {
     });
   } catch (err) {
     if (err instanceof ZodError) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "invalid character",
       });
