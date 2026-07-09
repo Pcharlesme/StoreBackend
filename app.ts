@@ -4,7 +4,6 @@ import { connectToserver } from "./src/config/dbconnect";
 import  auth  from "./src/routes/auth/accountAuth";
 
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -18,7 +17,6 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
-
 
 // Health check
 app.get("/health", (req, res) => {
