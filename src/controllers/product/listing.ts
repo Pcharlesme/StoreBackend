@@ -2,7 +2,7 @@ import express from "express";
 import { getDb } from "../../config/dbconnect";
 import { Response, Request } from "express";
 import { ObjectId } from "mongodb";
-import { success, ZodError } from "zod";
+import { regex, success, ZodError } from "zod";
 import {
   listingSchema,
   listingStatusSchema,
@@ -196,11 +196,99 @@ export const updateListingStatus = async (req: Request, res: Response) => {
   }
 };
 
-//find all product 
-export const findListing=()=> {
-    try{
+//find all product
+export const findListing = async (req: Request, res: Response) => {
+  try {
+    const DB = getDb();
+    const limit = Number(req.query.limit) || 10;
+    const page = Number(req.query.page) || 1;
+    const skip = Number(page - 1) * limit;
+    const data = await DB.collection("products")
+      .find({ status: "ACTIVE" })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+    const total = await DB.collection("products").countDocuments({
+      status: "ACTIVE",
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Listing retrieve successfully",
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server failed",
+    });
+  }
+};
 
-    }catch(err){
+//search listing
+export const searchListing = async (req: Request, res: Response) => {
+  try {
+    const DB = getDb();
+    const search = (req.query.search as string) || "";
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    let query: any = {
+      status: "ACTIVE",
+    };
 
+    if (search) {
+      query.$or = [
+        {
+          title: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          description: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+      ];
     }
-}
+    const data = await DB.collection("products")
+      .find(query)
+      .skip(skip)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+    if (data.length === 0) {
+      return res.json({
+        success: true,
+        message: "No search found and another product",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Item found",
+      limit,
+      skip,
+      count: data.length,
+      data,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server failed ",
+    });
+  }
+};
