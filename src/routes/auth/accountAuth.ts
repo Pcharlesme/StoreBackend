@@ -7,6 +7,15 @@ import {
   getUserProfile,
   updateUserProfile,
 } from "../../controllers/users/usersController";
+import {
+  createListing,
+  deleteListing,
+  findListing,
+  getListingbyId,
+  searchListing,
+  updateListing,
+  updateListingStatus,
+} from "../../controllers/product/listing";
 
 const Authrouter = express.Router();
 // user auth
@@ -17,5 +26,13 @@ Authrouter.get("/users/me/:id", getUserProfile);
 Authrouter.get("/users/:id", getUserbyId);
 Authrouter.patch("/users/me/:id", updateUserProfile);
 Authrouter.delete("/users/:id", deleteUser);
-
+// product listing
+Authrouter.post("/listings", createListing);
+Authrouter.patch("/listings/:id", updateListing);
+Authrouter.get("/listings", findListing);
+Authrouter.get("/listings/:id", getListingbyId);
+Authrouter.get("/listings/search", searchListing);
+Authrouter.delete("/listings/:id", deleteListing);
+//product lising status
+Authrouter.patch("/listings/status/:id", updateListingStatus);
 export default Authrouter;
