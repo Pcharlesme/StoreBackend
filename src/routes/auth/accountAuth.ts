@@ -1,7 +1,10 @@
 import express  from "express";
 import { createAccount, userlogin } from "../../controllers/auth/accounts";
 
-const router = express.Router()
+ const Authrouter = express.Router()
 
-router.post("/auth/signup", createAccount)
-router.post("/auth/login" , userlogin)
+Authrouter.post("/auth/signup", createAccount)
+Authrouter.post("/auth/login" , userlogin)
+
+
+export default Authrouter
