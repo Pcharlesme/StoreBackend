@@ -48,13 +48,41 @@ export const userlogin = async (req: Request, res: Response) => {
 
 // ========Create Account ============/
 
-
-
 export const createAccount = async (req: Request, res: Response) => {
   try {
-    const DB = getDb()
+    const DB = getDb();
     const payload = authSchemaType.parse(req.body);
-    const isUser = await DB.collection("user")
-
-  } catch (err) {}
+    const isUser = await DB.collection("user").findOne({
+      email: payload.email,
+    });
+    if (isUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Account exist already",
+      });
+    }
+    const hashedPassword = await bcrypt.hash(payload.password, 13);
+    const user = {
+      ...payload,
+      password: hashedPassword,
+      createdAt: new Date(),
+    };
+    const data = await DB.collection("user").insertOne({ user });
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      data,
+    });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid Parameer",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Server failed",
+    });
+  }
 };
