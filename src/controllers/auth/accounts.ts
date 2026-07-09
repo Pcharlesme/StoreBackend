@@ -17,14 +17,14 @@ export const userlogin = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User doesn't exist ! Register",
+        message: "Invalid email or password",
       });
     }
     const isPassword = await bcrypt.compare(password, user.password);
     if (!isPassword) {
       return res.status(404).json({
         success: false,
-        message: "Invalid Password",
+        message: "Invalid email or password",
       });
     }
     return res.status(200).json({
@@ -72,7 +72,7 @@ export const createAccount = async (req: Request, res: Response) => {
       password: hashedPassword,
       createdAt: new Date(),
     };
-    const data = await DB.collection("user").insertOne({ user });
+    const data = await DB.collection("user").insertOne(user);
     return res.status(201).json({
       success: true,
       message: "Account created successfully",
