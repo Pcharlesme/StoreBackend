@@ -12,27 +12,52 @@ import {
   deleteListing,
   findListing,
   getListingbyId,
+  getMyListings,
   searchListing,
   updateListing,
   updateListingStatus,
 } from "../../controllers/product/listing";
+import { authenticate } from "../../middleware/authenticate";
 
 const Authrouter = express.Router();
-// user auth
+
+/* ===========================
+   Public Authentication
+=========================== */
+
 Authrouter.post("/auth/signup", createAccount);
 Authrouter.post("/auth/login", LoginLimiter, userlogin);
-//user management
-Authrouter.get("/users/me/:id", getUserProfile);
-Authrouter.get("/users/:id", getUserbyId);
-Authrouter.patch("/users/me/:id", updateUserProfile);
-Authrouter.delete("/users/:id", deleteUser);
-// product listing
-Authrouter.post("/listings", createListing);
-Authrouter.patch("/listings/:id", updateListing);
+
+/* ===========================
+   Public Listings
+=========================== */
+
 Authrouter.get("/listings", findListing);
 Authrouter.get("/listings/search", searchListing);
 Authrouter.get("/listings/:id", getListingbyId);
-Authrouter.delete("/listings/:id", deleteListing);
-//product lising status
-Authrouter.patch("/listings/status/:id", updateListingStatus);
+
+/* ===========================
+   Public User Profiles
+=========================== */
+
+Authrouter.get("/users/:id", getUserbyId);
+
+/* ===========================
+   Protected User
+=========================== */
+
+Authrouter.get("/users/me", authenticate, getUserProfile);
+Authrouter.patch("/users/me", authenticate, updateUserProfile);
+Authrouter.delete("/users/me", authenticate, deleteUser);
+Authrouter.get("/users/me/listings", authenticate, getMyListings);
+
+/* ===========================
+   Protected Listings
+=========================== */
+
+Authrouter.post("/listings", authenticate, createListing);
+Authrouter.patch("/listings/:id", authenticate, updateListing);
+Authrouter.patch("/listings/status/:id", authenticate, updateListingStatus);
+Authrouter.delete("/listings/:id", authenticate, deleteListing);
+
 export default Authrouter;

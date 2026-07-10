@@ -47,16 +47,8 @@ export const getUserbyId = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
-    const id = req.params.id as string;
+    const id = req.user!.id;
     const payload = profileSchemaType.parse(req.body);
-
-    if (!ObjectId.isValid(id)) {
-      return res.status(404).json({
-        success: false,
-        message: "Invalid userID",
-      });
-    }
-
     const data = await DB.collection("user").updateOne(
       { _id: new ObjectId(id) },
       { $set: payload },
@@ -89,16 +81,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 //get user
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id as string;
-
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID",
-      });
-    }
+    const id = req.user!.id;
     const DB = getDb();
-
     const data = await DB.collection("user").findOne(
       { _id: new ObjectId(id) },
       {
@@ -128,33 +112,32 @@ export const getUserProfile = async (req: Request, res: Response) => {
 
 //delete user
 
-export const deleteUser = async (request: Request, response: Response) => {
+export const deleteUser = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
-    const userid = request.params.id as string;
-
-    if (!ObjectId.isValid(userid)) {
-      return response.status(400).json({
+    const id = req.user!.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
         success: false,
         message: "Id not valid",
       });
     }
     const data = await DB.collection("users").deleteOne({
-      _id: new ObjectId(userid),
+      _id: new ObjectId(id),
     });
 
     if (data.deletedCount === 0) {
-      return response.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "Account not valid",
       });
     }
-    return response.status(202).json({
+    return res.status(202).json({
       success: true,
       message: "Account Deleted",
     });
   } catch (err) {
-    return response.status(500).json({
+    return res.status(500).json({
       success: false,
       message: " server failed",
     });

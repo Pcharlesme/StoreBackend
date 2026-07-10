@@ -17,6 +17,7 @@ export const createListing = async (req: Request, res: Response) => {
     const product = {
       ...payload,
       status: "ACTIVE",
+      ownerId: new ObjectId(req.user!.id),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -48,14 +49,7 @@ export const updateListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
     const payload = updateListingSchema.parse(req.body);
-    const id = req.params.id as string;
-
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid listing ID",
-      });
-    }
+    const id = req.user!.id;
     const result = await DB.collection("products").updateOne(
       { _id: new ObjectId(id) },
       {
@@ -85,6 +79,30 @@ export const updateListing = async (req: Request, res: Response) => {
     });
   }
 };
+//getMyLisiting
+export const getMyListings = async (req: Request, res: Response) => {
+  try {
+    const DB = getDb();
+    const listings = await DB.collection("products")
+      .find({
+        ownerId: new ObjectId(req.user!.id),
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      count: listings.length,
+      data: listings,
+    });
+  } catch {
+    return res.status(500).json({
+      success: false,
+      message: "Server failed",
+    });
+  }
+};
+
 //getListing by id
 export const getListingbyId = async (req: Request, res: Response) => {
   try {

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 import { success, ZodError } from "zod";
 import { authSchemaType } from "../../schemas/auth/auth_schema";
+import { generateAccessToken } from "../../utils/jwtHelper";
 
 export const userlogin = async (req: Request, res: Response) => {
   try {
@@ -18,6 +19,7 @@ export const userlogin = async (req: Request, res: Response) => {
         message: "Invalid email or password",
       });
     }
+
     const isPassword = await bcrypt.compare(password, user.password);
     if (!isPassword) {
       return res.status(404).json({
@@ -25,9 +27,13 @@ export const userlogin = async (req: Request, res: Response) => {
         message: "Invalid email or password",
       });
     }
+    //generate jwttokken 
+    const accessToken = generateAccessToken(user._id.toString(), user.role);
+
     return res.status(200).json({
       success: true,
       message: "Login succesffully",
+      accessToken,
       user: {
         id: user._id,
         email: user.email,
