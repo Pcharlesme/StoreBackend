@@ -22,6 +22,7 @@ import { getAdminDashboard } from "../../controllers/dashboard/adminAnalystic";
 
 const Authrouter = express.Router();
 
+
 /* ===========================
    Public Authentication
 =========================== */
