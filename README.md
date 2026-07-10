@@ -121,9 +121,7 @@ Returns
 ```
 GET /users/me
 ```
-
 Protected
-
 ---
 
 ## Update Profile
