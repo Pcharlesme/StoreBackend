@@ -18,6 +18,7 @@ import {
   updateListingStatus,
 } from "../../controllers/product/listing";
 import { authenticate } from "../../middleware/authenticate";
+import { getAdminDashboard } from "../../controllers/dashboard/adminAnalystic";
 
 const Authrouter = express.Router();
 
@@ -54,7 +55,7 @@ Authrouter.get("/users/me/listings", authenticate, getMyListings);
 /* ===========================
    Protected Listings
 =========================== */
-
+Authrouter.get("/admin/dashboard", authenticate, getAdminDashboard);
 Authrouter.post("/listings", authenticate, createListing);
 Authrouter.patch("/listings/:id", authenticate, updateListing);
 Authrouter.patch("/listings/status/:id", authenticate, updateListingStatus);

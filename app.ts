@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import { connectToserver } from "./src/config/dbconnect";
 import auth from "./src/routes/auth/accountAuth";
 import { startDeListingExpiryJob } from "./src/middleware/autolistingExpiry";
@@ -22,7 +23,7 @@ app.use((req, res, next) => {
   });
   next();
 });
-
+app.use(compression());
 app.use(auth);
 
 // cron to start delisting expired product
