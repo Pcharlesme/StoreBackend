@@ -2,9 +2,10 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import { connectToserver } from "./src/config/dbconnect";
+import { connectToserver, getDb } from "./src/config/dbconnect";
 import auth from "./src/routes/auth/accountAuth";
 import { startDeListingExpiryJob } from "./src/middleware/autolistingExpiry";
+import { createIndexes } from "./src/middleware/indexes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,7 +34,12 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  connectToserver();
-});
+const startServer = async () => {
+  await connectToserver();
+  await createIndexes();
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer();
