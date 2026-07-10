@@ -6,7 +6,6 @@ export const startDeListingExpiryJob = () => {
   cron.schedule("*/15 * * * *", async () => {
     try {
       const DB = getDb();
-
       const result = await DB.collection("products").updateMany(
         {
           status: "ACTIVE",
@@ -21,7 +20,6 @@ export const startDeListingExpiryJob = () => {
           },
         }
       );
-
       console.log(
         `Expired listings updated: ${result.modifiedCount}`
       );
