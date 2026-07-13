@@ -8,6 +8,7 @@ import { startDeListingExpiryJob } from "./src/middleware/autolistingExpiry";
 import { createIndexes } from "./src/middleware/indexes";
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
 // Global middleware
@@ -20,6 +21,7 @@ app.use(
 app.use(helmet());
 app.use(express.json());
 // add logger
+
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
