@@ -22,7 +22,6 @@ import { getAdminDashboard } from "../../controllers/dashboard/adminAnalystic";
 
 const Authrouter = express.Router();
 
-
 /* ===========================
    Public Authentication
 =========================== */
@@ -39,12 +38,6 @@ Authrouter.get("/listings/search", searchListing);
 Authrouter.get("/listings/:id", getListingbyId);
 
 /* ===========================
-   Public User Profiles
-=========================== */
-
-Authrouter.get("/users/:id", getUserbyId);
-
-/* ===========================
    Protected User
 =========================== */
 
@@ -52,6 +45,12 @@ Authrouter.get("/users/me", authenticate, getUserProfile);
 Authrouter.patch("/users/me", authenticate, updateUserProfile);
 Authrouter.delete("/users/me", authenticate, deleteUser);
 Authrouter.get("/users/me/listings", authenticate, getMyListings);
+
+/* ===========================
+   Public User Profiles
+=========================== */
+
+Authrouter.get("/users/:id", getUserbyId);
 
 /* ===========================
    Protected Listings

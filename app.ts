@@ -44,6 +44,7 @@ app.get("/health", (req, res) => {
 const startServer = async () => {
   await connectToserver();
   await createIndexes();
+  
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

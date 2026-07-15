@@ -2,7 +2,10 @@ import express from "express";
 import { getDb } from "../../config/dbconnect";
 import { Response, Request } from "express";
 import { ObjectId } from "mongodb";
-import { profileSchemaType } from "../../schemas/auth/auth_schema";
+import {
+  profileSchemaType,
+  updateProfileSchema,
+} from "../../schemas/auth/auth_schema";
 import { success, ZodError } from "zod";
 
 /// find specific user wih id
@@ -48,7 +51,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
     const id = req.user!.id;
-    const payload = profileSchemaType.parse(req.body);
+    const payload = updateProfileSchema.parse(req.body);
     const data = await DB.collection("user").updateOne(
       { _id: new ObjectId(id) },
       { $set: payload },
@@ -83,6 +86,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const id = req.user!.id;
     const DB = getDb();
+    console.log("User:", req.user);
+    console.log("ID:", id);
+
     const data = await DB.collection("user").findOne(
       { _id: new ObjectId(id) },
       {
@@ -91,6 +97,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
         },
       },
     );
+
     if (!data) {
       return res.status(404).json({
         success: false,
@@ -103,9 +110,11 @@ export const getUserProfile = async (req: Request, res: Response) => {
       data,
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Server failed",
+      error: err,
     });
   }
 };
@@ -122,7 +131,7 @@ export const deleteUser = async (req: Request, res: Response) => {
         message: "Id not valid",
       });
     }
-    const data = await DB.collection("users").deleteOne({
+    const data = await DB.collection("user").deleteOne({
       _id: new ObjectId(id),
     });
 

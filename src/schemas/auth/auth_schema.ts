@@ -23,3 +23,4 @@ export const profileSchemaType = z.object({
   address: z.string().trim().optional(),
   location: locationSchema.optional(),
 });
+export const updateProfileSchema = profileSchemaType.partial();
