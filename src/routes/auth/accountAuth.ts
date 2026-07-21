@@ -52,6 +52,8 @@ Authrouter.get("/users/me/listings", authenticate, getMyListings);
 
 Authrouter.get("/users/:id", getUserbyId);
 
+
+
 /* ===========================
    Protected Listings
 =========================== */
