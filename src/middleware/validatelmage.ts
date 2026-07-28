@@ -1,8 +1,20 @@
 import multer from "multer";
 
-const Multer = multer();
-const ValidateImage = <T>(image: T) => {
-  const storage = multer.memoryStorage();
-  const upload = multer({ storage: storage });
-  upload.array("images", 6);
-};
+const storage = multer.memoryStorage();
+
+export const uploadImages = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 5,
+  },
+  fileFilter(req, file, cb) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Invalid image type"));
+    }
+
+    cb(null, true);
+  },
+}).array("images", 5);
