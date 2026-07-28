@@ -23,6 +23,7 @@ export const startDeListingExpiryJob = () => {
       console.log(
         `Expired listings updated: ${result.modifiedCount}`
       );
+      
 
     } catch (error) {
       console.error("Listing expiry job failed:", error);

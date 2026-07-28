@@ -136,6 +136,13 @@
   resolved "https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
+"@types/multer@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/@types/multer/-/multer-2.2.0.tgz"
+  integrity sha512-3U1troeqGV8Ntp7Q3klwf4zr23VEoqYVocYXaswm9+8z3O9UHDYAqLxjJ/h550iRADTjKdOdhhasXw6gD6kYtg==
+  dependencies:
+    "@types/express" "*"
+
 "@types/node@*", "@types/node@^25.8.0":
   version "25.9.5"
   resolved "https://registry.npmjs.org/@types/node/-/node-25.9.5.tgz"
