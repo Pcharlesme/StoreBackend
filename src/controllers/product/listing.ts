@@ -1,4 +1,6 @@
 import express from "express";
+import dotenv from "dotenv";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getDb } from "../../config/dbconnect";
 import { Response, Request } from "express";
 import { ObjectId } from "mongodb";
@@ -8,19 +10,25 @@ import {
   listingStatusSchema,
   updateListingSchema,
 } from "../../schemas/auth/product_schema";
+import { uploadToS3 } from "../../config/s3bucket";
 
 // add new lisiting
 export const createListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
     const payload = listingSchema.parse(req.body);
+    const files = req.files as Express.Multer.File[];
+    console.log(files[0].buffer); // -- to upload S3
+    const imageUrls = await Promise.all(files.map(uploadToS3));
     const product = {
+      images: imageUrls,
       ...payload,
       status: "ACTIVE",
       ownerId: new ObjectId(req.user!.id),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     const data = await DB.collection("products").insertOne(product);
     return res.status(201).json({
       success: true,
@@ -45,6 +53,7 @@ export const createListing = async (req: Request, res: Response) => {
 };
 
 // update lisiting
+
 export const updateListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();

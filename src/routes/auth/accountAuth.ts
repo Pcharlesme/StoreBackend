@@ -19,6 +19,8 @@ import {
 } from "../../controllers/product/listing";
 import { authenticate } from "../../middleware/authenticate";
 import { getAdminDashboard } from "../../controllers/dashboard/adminAnalystic";
+import { uploadImages } from "../../middleware/uploadImage";
+import { validateImages } from "../../middleware/validateImage";
 
 const Authrouter = express.Router();
 
@@ -58,7 +60,7 @@ Authrouter.get("/users/:id", getUserbyId);
    Protected Listings
 =========================== */
 Authrouter.get("/admin/dashboard", authenticate, getAdminDashboard);
-Authrouter.post("/listings", authenticate, createListing);
+Authrouter.post("/listings", authenticate, uploadImages , validateImages,createListing);
 Authrouter.patch("/listings/:id", authenticate, updateListing);
 Authrouter.patch("/listings/status/:id", authenticate, updateListingStatus);
 Authrouter.delete("/listings/:id", authenticate, deleteListing);
