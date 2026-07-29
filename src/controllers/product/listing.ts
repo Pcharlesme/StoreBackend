@@ -18,11 +18,17 @@ export const createListing = async (req: Request, res: Response) => {
     const DB = getDb();
     const payload = listingSchema.parse(req.body);
     const files = req.files as Express.Multer.File[];
-    console.log(files[0].buffer); // -- to upload S3
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one image is required",
+      });
+    }
     const imageUrls = await Promise.all(files.map(uploadToS3));
     const product = {
-      images: imageUrls,
       ...payload,
+      images: imageUrls,
       status: "ACTIVE",
       ownerId: new ObjectId(req.user!.id),
       createdAt: new Date(),
@@ -30,28 +36,29 @@ export const createListing = async (req: Request, res: Response) => {
     };
 
     const data = await DB.collection("products").insertOne(product);
+
     return res.status(201).json({
       success: true,
       message: "Product created",
       id: data.insertedId,
-      status: "ACTIVE",
-      title: payload.title,
-      type: payload.type,
+      images: imageUrls,
     });
   } catch (err) {
     if (err instanceof ZodError) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
-        message: "invalid character",
+        message: "Invalid data",
       });
     }
+
+    console.error(err);
+
     return res.status(500).json({
       success: false,
       message: "Server failed",
     });
   }
 };
-
 // update lisiting
 
 export const updateListing = async (req: Request, res: Response) => {
