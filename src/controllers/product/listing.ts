@@ -11,7 +11,10 @@ import {
   updateListingSchema,
 } from "../../schemas/auth/product_schema";
 import { uploadToS3 } from "../../config/s3bucket";
-import { getImageUrl } from "../../config/preSignerHelper";
+import {
+  addListingImageUrl,
+  addListingsImageUrl,
+} from "../../config/preSignerHelper";
 
 // add new lisiting
 export const createListing = async (req: Request, res: Response) => {
@@ -131,6 +134,7 @@ export const getListingbyId = async (req: Request, res: Response) => {
     const data = await DB.collection("products").findOne({
       _id: new ObjectId(id),
     });
+
     // no product found
     if (!data) {
       return res.status(404).json({
@@ -138,11 +142,13 @@ export const getListingbyId = async (req: Request, res: Response) => {
         message: "Listing not found",
       });
     }
+    //covert image url
+    const listingWithImages = await addListingImageUrl(data);
     // success response
     return res.status(200).json({
       success: true,
       message: "Listing retrieved successfully",
-      data,
+      listingWithImages,
     });
   } catch (err) {
     return res.status(500).json({
@@ -234,37 +240,23 @@ export const updateListingStatus = async (req: Request, res: Response) => {
 export const findListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
-
     const limit = Number(req.query.limit) || 10;
     const page = Number(req.query.page) || 1;
-    const skip = (page - 1) * limit;
-
-    // Fetch listings from MongoDB
+    const skip = Number(page - 1) * limit;
     const listings = await DB.collection("products")
       .find({ status: "ACTIVE" })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .toArray();
-
-    // Convert every stored S3 key into a temporary presigned URL
-    const data = await Promise.all(
-      listings.map(async (listing) => ({
-        ...listing,
-        images: await Promise.all(
-          listing.images.map((key: string) => getImageUrl(key)),
-        ),
-      })),
-    );
-
     const total = await DB.collection("products").countDocuments({
       status: "ACTIVE",
     });
-
+    const listingsWithImages = await addListingsImageUrl(listings);
     return res.status(200).json({
       success: true,
       message: "Listing retrieve successfully",
-      data,
+      data: listingsWithImages,
       pagination: {
         total,
         page,
@@ -273,7 +265,6 @@ export const findListing = async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Server failed",
@@ -285,12 +276,10 @@ export const findListing = async (req: Request, res: Response) => {
 export const searchListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
-
     const search = (req.query.search as string) || "";
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-
     let query: any = {
       status: "ACTIVE",
     };
@@ -317,14 +306,12 @@ export const searchListing = async (req: Request, res: Response) => {
         },
       ];
     }
-    // Get listings from MongoDB
     const listings = await DB.collection("products")
       .find(query)
       .skip(skip)
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray();
-
     if (listings.length === 0) {
       return res.json({
         success: true,
@@ -332,31 +319,19 @@ export const searchListing = async (req: Request, res: Response) => {
       });
     }
 
-    // Convert S3 keys into temporary presigned URLs
-    const data = await Promise.all(
-      listings.map(async (listing) => ({
-        ...listing,
-        images: await Promise.all(
-          listing.images.map((key: string) => getImageUrl(key)),
-        ),
-      })),
-    );
-
+    const listingsWithImages = await addListingsImageUrl(listings);
     return res.status(200).json({
       success: true,
       message: "Item found",
       limit,
       skip,
-      count: data.length,
-      data,
+      count: listings.length,
+      listingsWithImages,
     });
-
   } catch (err) {
-    console.error(err);
-
     return res.status(500).json({
       success: false,
-      message: "Server failed",
+      message: "Server failed ",
     });
   }
 };

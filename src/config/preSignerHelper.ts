@@ -12,3 +12,24 @@ export async function getImageUrl(key: string) {
     expiresIn: 60 * 60, // 1 hour
   });
 }
+
+
+//convert 
+
+// For one listing (get by id)
+export const addListingImageUrl = async (listing: any) => {
+  return {
+    ...listing,
+    images: await Promise.all(
+      listing.images.map((key: string) => getImageUrl(key))
+    ),
+  };
+};
+
+
+// For multiple listings (all, search, user listings)
+export const addListingsImageUrl = async (listings: any[]) => {
+  return Promise.all(
+    listings.map((listing) => addListingImageUrl(listing))
+  );
+};
