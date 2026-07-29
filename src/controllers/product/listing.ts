@@ -57,8 +57,9 @@ export const createListing = async (req: Request, res: Response) => {
     });
   }
 };
-// update lisiting
 
+
+// update lisiting
 export const updateListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
