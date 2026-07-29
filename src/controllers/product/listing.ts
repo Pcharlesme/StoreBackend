@@ -11,6 +11,7 @@ import {
   updateListingSchema,
 } from "../../schemas/auth/product_schema";
 import { uploadToS3 } from "../../config/s3bucket";
+import { getImageUrl } from "../../config/preSignerHelper";
 
 // add new lisiting
 export const createListing = async (req: Request, res: Response) => {
@@ -30,9 +31,7 @@ export const createListing = async (req: Request, res: Response) => {
         message: "Images required",
       });
     }
-
     const imageUrls = await Promise.all(files.map(uploadToS3));
-
     const product = {
       ...payload,
       images: imageUrls,
@@ -57,7 +56,6 @@ export const createListing = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 // update lisiting
 export const updateListing = async (req: Request, res: Response) => {
@@ -94,6 +92,7 @@ export const updateListing = async (req: Request, res: Response) => {
     });
   }
 };
+
 //getMyLisiting
 export const getMyListings = async (req: Request, res: Response) => {
   try {
@@ -235,18 +234,33 @@ export const updateListingStatus = async (req: Request, res: Response) => {
 export const findListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
+
     const limit = Number(req.query.limit) || 10;
     const page = Number(req.query.page) || 1;
-    const skip = Number(page - 1) * limit;
-    const data = await DB.collection("products")
+    const skip = (page - 1) * limit;
+
+    // Fetch listings from MongoDB
+    const listings = await DB.collection("products")
       .find({ status: "ACTIVE" })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .toArray();
+
+    // Convert every stored S3 key into a temporary presigned URL
+    const data = await Promise.all(
+      listings.map(async (listing) => ({
+        ...listing,
+        images: await Promise.all(
+          listing.images.map((key: string) => getImageUrl(key)),
+        ),
+      })),
+    );
+
     const total = await DB.collection("products").countDocuments({
       status: "ACTIVE",
     });
+
     return res.status(200).json({
       success: true,
       message: "Listing retrieve successfully",
@@ -259,6 +273,7 @@ export const findListing = async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: "Server failed",
@@ -270,10 +285,12 @@ export const findListing = async (req: Request, res: Response) => {
 export const searchListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
+
     const search = (req.query.search as string) || "";
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+
     let query: any = {
       status: "ACTIVE",
     };
@@ -300,18 +317,31 @@ export const searchListing = async (req: Request, res: Response) => {
         },
       ];
     }
-    const data = await DB.collection("products")
+    // Get listings from MongoDB
+    const listings = await DB.collection("products")
       .find(query)
       .skip(skip)
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray();
-    if (data.length === 0) {
+
+    if (listings.length === 0) {
       return res.json({
         success: true,
         message: "No search found and another product",
       });
     }
+
+    // Convert S3 keys into temporary presigned URLs
+    const data = await Promise.all(
+      listings.map(async (listing) => ({
+        ...listing,
+        images: await Promise.all(
+          listing.images.map((key: string) => getImageUrl(key)),
+        ),
+      })),
+    );
+
     return res.status(200).json({
       success: true,
       message: "Item found",
@@ -320,10 +350,13 @@ export const searchListing = async (req: Request, res: Response) => {
       count: data.length,
       data,
     });
+
   } catch (err) {
+    console.error(err);
+
     return res.status(500).json({
       success: false,
-      message: "Server failed ",
+      message: "Server failed",
     });
   }
 };
