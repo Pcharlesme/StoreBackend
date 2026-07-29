@@ -16,16 +16,23 @@ import { uploadToS3 } from "../../config/s3bucket";
 export const createListing = async (req: Request, res: Response) => {
   try {
     const DB = getDb();
+
+    // console.log(req.body);
+    // console.log(req.files);
+
+    req.body.price = Number(req.body.price);
+    req.body.location = JSON.parse(req.body.location);
     const payload = listingSchema.parse(req.body);
     const files = req.files as Express.Multer.File[];
-
     if (!files || files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "At least one image is required",
+        message: "Images required",
       });
     }
+
     const imageUrls = await Promise.all(files.map(uploadToS3));
+
     const product = {
       ...payload,
       images: imageUrls,
@@ -35,23 +42,14 @@ export const createListing = async (req: Request, res: Response) => {
       updatedAt: new Date(),
     };
 
-    const data = await DB.collection("products").insertOne(product);
+    await DB.collection("products").insertOne(product);
 
     return res.status(201).json({
       success: true,
       message: "Product created",
-      id: data.insertedId,
-      images: imageUrls,
     });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid data",
-      });
-    }
-
-    console.error(err);
+  } catch (error) {
+    console.log(error);
 
     return res.status(500).json({
       success: false,
