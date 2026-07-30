@@ -326,7 +326,7 @@ export const searchListing = async (req: Request, res: Response) => {
       limit,
       skip,
       count: listings.length,
-      listingsWithImages,
+      data: listingsWithImages,
     });
   } catch (err) {
     return res.status(500).json({
