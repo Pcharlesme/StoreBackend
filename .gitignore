@@ -16,9 +16,5 @@ config.env
 .DS_Store
 .vscode/
 .idea/
-src/jobs
-src/routes
-src/utils
-src/views
 
 

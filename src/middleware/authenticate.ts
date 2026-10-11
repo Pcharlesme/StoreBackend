@@ -1,43 +1,29 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { HttpError } from "../utils/httpError";
+import { Role, verifyAccessToken } from "../utils/jwt";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
+  const [scheme, token] = req.headers.authorization?.split(" ") ?? [];
 
-export const authenticate = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const authHeader = req.headers.authorization;
-  console.log("Authenticate middleware");
-
-  if (!authHeader) {
-    return res.status(401).json({
-      success: false,
-      message: "Access token missing",
-    });
-  }
-  const token = authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid token",
-    });
+  if (scheme !== "Bearer" || !token) {
+    throw HttpError.unauthorized("Access token missing");
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role: string;
-    };
-
-    req.user = decoded;
-
-    next();
+    req.user = verifyAccessToken(token);
   } catch {
-    return res.status(401).json({
-      success: false,
-      message: "Token expired or invalid",
-    });
+    throw HttpError.unauthorized("Token expired or invalid");
   }
+
+  next();
 };
+
+/** Must run after `authenticate`. */
+export const requireRole =
+  (...roles: Role[]) =>
+  (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      throw HttpError.forbidden("You do not have permission to access this resource");
+    }
+    next();
+  };
