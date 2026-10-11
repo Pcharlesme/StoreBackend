@@ -1,2 +1,24 @@
-/node_modules
-/config.env
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+
+# Environment (never commit real secrets)
+.env
+.env.*
+!.env.example
+config.env
+
+# Logs & OS / editor files
+*.log
+.DS_Store
+.vscode/
+.idea/
+src/jobs
+src/routes
+src/utils
+src/views
+
+
