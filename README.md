@@ -41,25 +41,28 @@ Built with **Express 5 + TypeScript**, **MongoDB**, **AWS S3** (private bucket, 
 
 ```mermaid
 flowchart LR
-    Client["Web client<br/>(React / Vite)"] -->|HTTPS + Bearer JWT| API
+    Client["Web client (React / Vite)"]
+    DB[("MongoDB")]
+    S3[("S3 bucket (private)")]
+    Cron["Expiry job (every 15 min)"]
 
     subgraph API["Express API"]
-        direction TB
-        MW["Global middleware<br/>helmet · cors · compression · json · rate limit"]
+        MW["Global middleware: helmet, cors, compression, json, rate limit"]
         R["Routes"]
         A["authenticate / requireRole"]
         V["Zod schemas"]
         C["Controllers"]
         E["Error handler"]
         MW --> R --> A --> C
-        C -. parse .-> V
-        C -. throw .-> E
+        C -.->|parse| V
+        C -.->|throw| E
     end
 
-    C -->|queries| DB[(MongoDB)]
-    C -->|PutObject / DeleteObjects| S3[(S3 bucket<br/>private)]
-    C -->|sign GetObject URL| S3
-    Cron["Expiry job<br/>every 15 min"] -->|updateMany| DB
+    Client -->|"HTTPS + Bearer JWT"| MW
+    C -->|queries| DB
+    C -->|"PutObject / DeleteObjects"| S3
+    C -->|"sign GetObject URL"| S3
+    Cron -->|updateMany| DB
 ```
 
 ### Request lifecycle: creating a listing
@@ -74,16 +77,16 @@ sequenceDiagram
 
     C->>API: POST /listings (multipart, Bearer token)
     API->>API: authenticate (verify JWT)
-    API->>M: parse files (≤5, ≤5 MB, jpeg/png/webp)
+    API->>M: parse files (max 5, 5 MB each, jpeg/png/webp)
     API->>API: Zod-validate fields
-    Note over API: Invalid input stops here,<br/>so nothing reaches S3
-    API->>S3: PutObject × N (random keys)
+    Note over API: Invalid input stops here, so nothing reaches S3
+    API->>S3: PutObject for each file (random keys)
     API->>DB: insertOne(listing with S3 keys)
     alt insert fails
         API->>S3: delete uploaded objects
     end
     API->>API: sign image URLs (1h TTL)
-    API-->>C: 201 { data: listing with signed URLs }
+    API-->>C: 201 Created (listing with signed URLs)
 ```
 
 ### Listing lifecycle
@@ -96,7 +99,7 @@ stateDiagram-v2
     ACTIVE --> DELETED: owner/admin sets status
     SOLD --> ACTIVE: owner re-lists
     EXPIRED --> ACTIVE: owner re-lists
-    ACTIVE --> [*]: DELETE /listings/:id<br/>(document + images removed)
+    ACTIVE --> [*]: DELETE listing (document and images removed)
 ```
 
 ### Project structure
