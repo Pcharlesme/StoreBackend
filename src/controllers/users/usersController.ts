@@ -1,154 +1,70 @@
-import express from "express";
-import { getDb } from "../../config/dbconnect";
-import { Response, Request } from "express";
-import { ObjectId } from "mongodb";
-import {
-  profileSchemaType,
-  updateProfileSchema,
-} from "../../schemas/auth/auth_schema";
-import { success, ZodError } from "zod";
+import { Request, Response } from "express";
+import { Collections, getDb } from "../../config/db";
+import { deleteImagesSafely } from "../../config/s3";
+import { updateProfileSchema } from "../../schemas/auth";
+import { HttpError } from "../../utils/httpError";
+import { parseObjectId } from "../../utils/objectId";
 
-/// find specific user wih id
-export const getUserbyId = async (req: Request, res: Response) => {
-  try {
-    const DB = getDb();
-    const user = await DB.collection("user").findOne(
-      { _id: new ObjectId(req.params.id as string) },
-      {
-        projection: {
-          password: 0,
-        },
-      },
-    );
-    if (!ObjectId.isValid(req.params.id as string)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user id",
-      });
-    }
+// Contact details (email, phone, address) are only visible to the account owner
+const PUBLIC_PROFILE_PROJECTION = {
+  fullname: 1,
+  "location.city": 1,
+  "location.country": 1,
+  createdAt: 1,
+} as const;
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-    return res.status(200).json({
-      success: true,
-      message: "request received",
-      user,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Server failed",
-    });
-  }
+export const getPublicProfile = async (req: Request, res: Response) => {
+  const id = parseObjectId(req.params.id, "user id");
+
+  const user = await getDb()
+    .collection(Collections.users)
+    .findOne({ _id: id }, { projection: PUBLIC_PROFILE_PROJECTION });
+
+  if (!user) throw HttpError.notFound("User not found");
+
+  res.status(200).json({ success: true, data: user });
 };
 
-// update user Profile
-export const updateUserProfile = async (req: Request, res: Response) => {
-  try {
-    const DB = getDb();
-    const id = req.user!.id;
-    const payload = updateProfileSchema.parse(req.body);
-    const data = await DB.collection("user").updateOne(
-      { _id: new ObjectId(id) },
-      { $set: payload },
-    );
-    if (data.matchedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-    return res.status(201).json({
-      success: true,
-      message: "User Profile Updated successfully",
-      data,
-    });
-  } catch (err) {
-    if (err instanceof ZodError) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid character",
-      });
-    }
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
-  }
+export const getMyProfile = async (req: Request, res: Response) => {
+  const user = await getDb()
+    .collection(Collections.users)
+    .findOne({ _id: parseObjectId(req.user!.id) }, { projection: { password: 0 } });
+
+  if (!user) throw HttpError.notFound("User not found");
+
+  res.status(200).json({ success: true, data: user });
 };
 
-//get user
-export const getUserProfile = async (req: Request, res: Response) => {
-  try {
-    const id = req.user!.id;
-    const DB = getDb();
-    console.log("User:", req.user);
-    console.log("ID:", id);
+export const updateMyProfile = async (req: Request, res: Response) => {
+  const payload = updateProfileSchema.parse(req.body);
 
-    const data = await DB.collection("user").findOne(
-      { _id: new ObjectId(id) },
-      {
-        projection: {
-          password: 0,
-        },
-      },
+  const user = await getDb()
+    .collection(Collections.users)
+    .findOneAndUpdate(
+      { _id: parseObjectId(req.user!.id) },
+      { $set: { ...payload, updatedAt: new Date() } },
+      { returnDocument: "after", projection: { password: 0 } },
     );
 
-    if (!data) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-    return res.status(200).json({
-      success: true,
-      message: "User retrieved successfully",
-      data,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Server failed",
-      error: err,
-    });
-  }
+  if (!user) throw HttpError.notFound("User not found");
+
+  res.status(200).json({ success: true, message: "Profile updated successfully", data: user });
 };
 
-//delete user
+export const deleteMyAccount = async (req: Request, res: Response) => {
+  const db = getDb();
+  const userId = parseObjectId(req.user!.id);
 
-export const deleteUser = async (req: Request, res: Response) => {
-  try {
-    const DB = getDb();
-    const id = req.user!.id;
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Id not valid",
-      });
-    }
-    const data = await DB.collection("user").deleteOne({
-      _id: new ObjectId(id),
-    });
+  const { deletedCount } = await db.collection(Collections.users).deleteOne({ _id: userId });
+  if (deletedCount === 0) throw HttpError.notFound("User not found");
 
-    if (data.deletedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Account not valid",
-      });
-    }
-    return res.status(202).json({
-      success: true,
-      message: "Account Deleted",
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: " server failed",
-    });
-  }
+  // ===== Cascade: remove the user's listings and their images =====
+  const listings = db.collection(Collections.listings);
+  const owned = await listings
+    .find({ ownerId: userId }, { projection: { images: 1 } })
+    .toArray();
+  await listings.deleteMany({ ownerId: userId });
+  await deleteImagesSafely(owned.flatMap((listing) => listing.images ?? []));
+
+  res.status(200).json({ success: true, message: "Account deleted" });
 };
